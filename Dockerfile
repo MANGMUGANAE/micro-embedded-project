@@ -1,8 +1,7 @@
-FROM ubuntu:22.04 AS build
+FROM ubuntu:24.04 AS build
 RUN dpkg --add-architecture arm64 && \
-    sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list && \
-    echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main universe" >> /etc/apt/sources.list && \
-    echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates main universe" >> /etc/apt/sources.list && \
+    sed -i '/^Types: deb$/a Architectures: amd64' /etc/apt/sources.list.d/ubuntu.sources && \
+    printf 'deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble main universe\ndeb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-updates main universe\n' > /etc/apt/sources.list.d/arm64.list && \
     apt-get update && \
     apt-get install -y cmake crossbuild-essential-arm64 libgpiod-dev:arm64
 WORKDIR /src
