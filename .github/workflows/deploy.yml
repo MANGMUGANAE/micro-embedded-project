@@ -1,0 +1,31 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - run: docker buildx build --output type=local,dest=./out .
+
+      - run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 100.104.67.117 >> ~/.ssh/known_hosts
+
+      - run: ssh -i ~/.ssh/id_ed25519 ubuntu@100.104.67.117 "pkill -f /home/ubuntu/prod/app || true; rm -rf /home/ubuntu/prod; mkdir -p /home/ubuntu/prod"
+
+      - run: scp -i ~/.ssh/id_ed25519 ./out/app ubuntu@100.104.67.117:/home/ubuntu/prod/app
+
+      - run: ssh -i ~/.ssh/id_ed25519 ubuntu@100.104.67.117 "chmod +x /home/ubuntu/prod/app && nohup /home/ubuntu/prod/app > /home/ubuntu/prod/log.txt 2>&1 & disown"
