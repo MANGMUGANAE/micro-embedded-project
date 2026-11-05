@@ -41,4 +41,4 @@ jobs:
 
       - run: sshpass -p '${{ secrets.SSH_PASSWORD }}' scp out/app ubuntu@100.104.67.117:/home/ubuntu/prod/app
 
-      - run: sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh ubuntu@100.104.67.117 "chmod +x /home/ubuntu/prod/app && nohup /home/ubuntu/prod/app < /dev/null > /home/ubuntu/prod/log.txt 2>&1 & disown"
+      - run: sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh ubuntu@100.104.67.117 "chmod +x /home/ubuntu/prod/app && (nohup /home/ubuntu/prod/app < /dev/null > /home/ubuntu/prod/log.txt 2>&1 &)"
