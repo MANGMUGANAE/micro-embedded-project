@@ -15,16 +15,15 @@ jobs:
           authkey: ${{ secrets.TS_AUTHKEY }}
 
       - run: |
+          sudo apt-get update && sudo apt-get install -y sshpass
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H 100.104.67.117 >> ~/.ssh/known_hosts
 
       - run: |
           mkdir -p sysroot/usr sysroot/lib out
-          rsync -a -e "ssh -i ~/.ssh/id_ed25519" ubuntu@100.104.67.117:/usr/include/ sysroot/usr/include/
-          rsync -a -e "ssh -i ~/.ssh/id_ed25519" ubuntu@100.104.67.117:/usr/lib/ sysroot/usr/lib/
-          rsync -a -e "ssh -i ~/.ssh/id_ed25519" ubuntu@100.104.67.117:/lib/ sysroot/lib/
+          rsync -a -e "sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh" ubuntu@100.104.67.117:/usr/include/ sysroot/usr/include/
+          rsync -a -e "sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh" ubuntu@100.104.67.117:/usr/lib/ sysroot/usr/lib/
+          rsync -a -e "sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh" ubuntu@100.104.67.117:/lib/ sysroot/lib/
 
       - run: docker build -t cross-image .
 
@@ -37,8 +36,8 @@ jobs:
               cmake -S /src -B /out -DCMAKE_TOOLCHAIN_FILE=/src/cmake/toolchains/aarch64-linux-gnu.cmake -DCMAKE_SYSROOT=/sysroot -DCMAKE_BUILD_TYPE=Release &&
               cmake --build /out --parallel'
 
-      - run: ssh -i ~/.ssh/id_ed25519 ubuntu@100.104.67.117 "pkill -f /home/ubuntu/prod/app || true; rm -rf /home/ubuntu/prod; mkdir -p /home/ubuntu/prod"
+      - run: sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh ubuntu@100.104.67.117 "pkill -f /home/ubuntu/prod/app || true; rm -rf /home/ubuntu/prod; mkdir -p /home/ubuntu/prod"
 
-      - run: scp -i ~/.ssh/id_ed25519 out/app ubuntu@100.104.67.117:/home/ubuntu/prod/app
+      - run: sshpass -p '${{ secrets.SSH_PASSWORD }}' scp out/app ubuntu@100.104.67.117:/home/ubuntu/prod/app
 
-      - run: ssh -i ~/.ssh/id_ed25519 ubuntu@100.104.67.117 "chmod +x /home/ubuntu/prod/app && nohup /home/ubuntu/prod/app > /home/ubuntu/prod/log.txt 2>&1 & disown"
+      - run: sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh ubuntu@100.104.67.117 "chmod +x /home/ubuntu/prod/app && nohup /home/ubuntu/prod/app > /home/ubuntu/prod/log.txt 2>&1 & disown"
