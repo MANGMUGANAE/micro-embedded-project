@@ -17,12 +17,12 @@ jobs:
       - run: |
           sudo apt-get update && sudo apt-get install -y sshpass
           mkdir -p ~/.ssh
-          ssh-keyscan -H 100.104.67.117 >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.PI_HOST }} >> ~/.ssh/known_hosts
 
       - run: |
           mkdir -p sysroot/usr/include sysroot/usr/lib/aarch64-linux-gnu out
-          rsync -a -e "sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh" ubuntu@100.104.67.117:/usr/include/gpiod.h sysroot/usr/include/
-          rsync -a -e "sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh" ubuntu@100.104.67.117:/usr/lib/aarch64-linux-gnu/libgpiod.so* sysroot/usr/lib/aarch64-linux-gnu/
+          rsync -a -e "sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh" ubuntu@${{ secrets.PI_HOST }}:/usr/include/gpiod.h sysroot/usr/include/
+          rsync -a -e "sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh" ubuntu@${{ secrets.PI_HOST }}:/usr/lib/aarch64-linux-gnu/libgpiod.so* sysroot/usr/lib/aarch64-linux-gnu/
 
       - run: docker build -t cross-image .
 
@@ -37,8 +37,8 @@ jobs:
                 -DCMAKE_EXE_LINKER_FLAGS=-L/sysroot/usr/lib/aarch64-linux-gnu &&
               cmake --build /out --parallel'
 
-      - run: sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh ubuntu@100.104.67.117 "pkill -x app || true; rm -rf /home/ubuntu/prod; mkdir -p /home/ubuntu/prod"
+      - run: sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh ubuntu@${{ secrets.PI_HOST }} "pkill -x app || true; rm -rf /home/ubuntu/prod; mkdir -p /home/ubuntu/prod"
 
-      - run: sshpass -p '${{ secrets.SSH_PASSWORD }}' scp out/app ubuntu@100.104.67.117:/home/ubuntu/prod/app
+      - run: sshpass -p '${{ secrets.SSH_PASSWORD }}' scp out/app out/reset ubuntu@${{ secrets.PI_HOST }}:/home/ubuntu/prod/
 
-      - run: sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh ubuntu@100.104.67.117 "chmod +x /home/ubuntu/prod/app && (nohup /home/ubuntu/prod/app < /dev/null > /home/ubuntu/prod/log.txt 2>&1 &)"
+      - run: sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh ubuntu@${{ secrets.PI_HOST }} "chmod +x /home/ubuntu/prod/reset /home/ubuntu/prod/app && /home/ubuntu/prod/reset && (nohup /home/ubuntu/prod/app < /dev/null > /home/ubuntu/prod/log.txt 2>&1 &)"
