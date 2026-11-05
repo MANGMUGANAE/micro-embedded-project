@@ -8,7 +8,7 @@ RUN dpkg --add-architecture arm64 && \
 RUN git clone https://github.com/brgl/libgpiod.git /tmp/libgpiod && \
     cd /tmp/libgpiod && \
     git checkout $(git tag --sort=-v:refname | head -1) && \
-    ./autogen.sh && \
+    autoreconf -vfi && \
     ./configure --host=aarch64-linux-gnu --prefix=/opt/arm64 --disable-shared --enable-static --disable-tools --disable-bindings-cxx && \
     make -j$(nproc) && \
     make install
