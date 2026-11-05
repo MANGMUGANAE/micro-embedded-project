@@ -20,10 +20,9 @@ jobs:
           ssh-keyscan -H 100.104.67.117 >> ~/.ssh/known_hosts
 
       - run: |
-          mkdir -p sysroot/usr sysroot/lib out
-          rsync -a -e "sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh" ubuntu@100.104.67.117:/usr/include/ sysroot/usr/include/
-          rsync -a -e "sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh" ubuntu@100.104.67.117:/usr/lib/ sysroot/usr/lib/
-          rsync -a -e "sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh" ubuntu@100.104.67.117:/lib/ sysroot/lib/
+          mkdir -p sysroot/usr/include sysroot/usr/lib/aarch64-linux-gnu out
+          rsync -a -e "sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh" ubuntu@100.104.67.117:/usr/include/gpiod.h sysroot/usr/include/
+          rsync -a -e "sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh" ubuntu@100.104.67.117:/usr/lib/aarch64-linux-gnu/libgpiod.so* sysroot/usr/lib/aarch64-linux-gnu/
 
       - run: docker build -t cross-image .
 
@@ -33,7 +32,9 @@ jobs:
             -v "$PWD/sysroot:/sysroot:ro" \
             -v "$PWD/out:/out" \
             cross-image sh -c '
-              cmake -S /src -B /out -DCMAKE_TOOLCHAIN_FILE=/src/cmake/toolchains/aarch64-linux-gnu.cmake -DCMAKE_SYSROOT=/sysroot -DCMAKE_BUILD_TYPE=Release &&
+              cmake -S /src -B /out -DCMAKE_TOOLCHAIN_FILE=/src/cmake/toolchains/aarch64-linux-gnu.cmake -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_C_FLAGS=-I/sysroot/usr/include -DCMAKE_CXX_FLAGS=-I/sysroot/usr/include \
+                -DCMAKE_EXE_LINKER_FLAGS=-L/sysroot/usr/lib/aarch64-linux-gnu &&
               cmake --build /out --parallel'
 
       - run: sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh ubuntu@100.104.67.117 "pkill -f /home/ubuntu/prod/app || true; rm -rf /home/ubuntu/prod; mkdir -p /home/ubuntu/prod"
