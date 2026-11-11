@@ -22,7 +22,7 @@ int main() {
     while (true) {
         double t = now_us();
 
-        if (t - last_read > 20000) {
+        if (t - last_read > 15000) {
             FILE* f = fopen("/tmp/hand_state", "r");
             if (f) {
                 fscanf(f, "%lf %lf", &freq_l, &freq_r);
